@@ -69,7 +69,7 @@ After design is validated, use AskUserQuestion tool:
       "options": [
         {
           "label": "Write plan",
-          "description": "Create docs/plans/YYYY-MM-DD-<topic>.md with implementation steps via /planning:make"
+          "description": "Create docs/plans/YYYY-MM-DD-<topic>.md with implementation steps"
         },
         {
           "label": "Plan mode",
@@ -83,7 +83,7 @@ After design is validated, use AskUserQuestion tool:
 }
 ```
 
-- **Write plan**: invoke `/planning:make` command to create the plan file. Pass brainstorm context (discovered files, selected approach, design decisions) as arguments so the plan command has full context without re-asking questions
+- **Write plan**: create a plan file at `docs/plans/YYYY-MM-DD-<topic>.md` with implementation steps. Include brainstorm context (discovered files, selected approach, design decisions) so the plan has full context without re-asking questions
 - **Plan mode**: uses EnterPlanMode tool for detailed planning with user approval workflow
 - **Start now**: proceeds directly if design is simple enough
 
