@@ -1,0 +1,13 @@
+{
+  "name": "konstantinzolotarev-cc-plugins",
+  "owner": {
+    "name": "Konstantin Zolotarev"
+  },
+  "plugins": [
+    {
+      "name": "cc-plugins",
+      "source": ".",
+      "description": "A list of custom skills: brainstorm and interview"
+    }
+  ]
+}
