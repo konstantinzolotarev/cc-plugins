@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "cc-plugins",
-      "source": ".",
+      "source": "./",
       "description": "A list of custom skills: brainstorm and interview"
     }
   ]
