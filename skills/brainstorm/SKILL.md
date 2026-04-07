@@ -14,7 +14,7 @@ Turn ideas into designs through collaborative dialogue before implementation.
 Check project context first, then ask questions one at a time:
 
 1. **Gather context** - check files, docs, recent commits relevant to the idea
-2. **Ask questions one at a time** - prefer multiple choice when possible
+2. **Ask questions one at a time** - prefer multiple choice when possible, use `AskUserQuestion` tool for asking questions.
 3. **Focus on**: purpose, constraints, success criteria, integration points
 
 Do not overwhelm with multiple questions. One question per message. If a topic needs more exploration, break it into multiple questions.
@@ -89,7 +89,7 @@ After design is validated, use AskUserQuestion tool:
 
 ## Key Principles
 
-- **One question at a time** - do not overwhelm with multiple questions
+- **One question at a time** - do not overwhelm with multiple questions, use `AskUserQuestion` tool for asking questions
 - **Multiple choice preferred** - easier to answer than open-ended when possible
 - **YAGNI ruthlessly** - remove unnecessary features from all designs, keep scope minimal
 - **Explore alternatives** - always propose 2-3 approaches before settling
