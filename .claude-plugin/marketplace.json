@@ -7,7 +7,7 @@
     {
       "name": "cc-plugins",
       "source": "./",
-      "description": "A list of custom skills: brainstorm and interview"
+      "description": "A collection of custom skills: brainstorm, clarify, interview, learn, multi-review, pr-review, pr-validate-review, and rust-review"
     }
   ]
 }
