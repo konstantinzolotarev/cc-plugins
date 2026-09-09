@@ -1,0 +1,82 @@
+{
+  "_comment": [
+    "Defaults for /audit. A project's .claude/audit/config.json is deep-merged",
+    "OVER this file, so a project only writes what is genuinely different.",
+    "Lists and strings REPLACE rather than merge — a project overriding",
+    "`exclude_paths` owns the whole list.",
+    "",
+    "TWO EXCLUDE MECHANISMS, and the split is not cosmetic:",
+    "",
+    "  exclude_paths  literal directory prefixes, NO wildcards, passed to git",
+    "                 as `:(exclude)<path>`. Applies to lane file lists AND to",
+    "                 the symbol reference passes — this is for code that is",
+    "                 not ours at all (vendored, submoduled), whose tokens must",
+    "                 not count as references to our symbols.",
+    "",
+    "  exclude_re     an ERE matched against the path with `grep -v -E`, after",
+    "                 git has listed the files. Applies to lane file lists ONLY.",
+    "                 This is for our code that is outside audit scope (tests,",
+    "                 fixtures, type stubs) — references FROM those files still",
+    "                 have to be counted, or every test helper reads as dead.",
+    "",
+    "Why not one mechanism: git's `:(exclude)` pathspec matches by extension",
+    "when the pattern carries a wildcard — `:(exclude)*.d.ts` drops every .ts",
+    "file in the repo, and `:(exclude,glob)**/*.d.ts` silently drops none",
+    "(verified on git 2.50). Positive pathspecs are exact; exclusions are not.",
+    "So anything with a wildcard in it belongs in exclude_re."
+  ],
+
+  "version": 1,
+  "report_dir": "docs/audits",
+
+  "exclude_paths": [],
+  "exclude_re": "(^|/)(node_modules|dist|build|vendor|generated|\\.svelte-kit)/",
+
+  "lanes": {
+    "rust": {
+      "detect": "Cargo.toml",
+      "kind": "rust",
+      "include": ["*.rs"],
+      "exclude_re": "/tests/|/tests\\.rs$|/fixtures/",
+      "clone_window": 8,
+      "clone_top": 120,
+      "lint": {
+        "cmd": "cargo clippy --workspace --all-targets --message-format=json -- -W clippy::pedantic -W clippy::nursery",
+        "target_dir": "target/audit-clippy",
+        "parser": "cargo-json",
+        "out": "lint.tsv"
+      }
+    },
+
+    "web": {
+      "detect": "package.json",
+      "kind": "js",
+      "include": ["*.ts", "*.tsx", "*.js", "*.jsx", "*.svelte", "*.vue"],
+      "exclude_re": "\\.(test|spec)\\.[tj]sx?$|\\.d\\.ts$|/__snapshots__/|/fixtures/",
+      "clone_window": 6,
+      "clone_top": 80,
+      "lint": {
+        "cmd": null,
+        "parser": "raw",
+        "out": "web_check.txt"
+      }
+    }
+  },
+
+  "symbols": {
+    "reference_paths": [
+      "*.rs", "*.ts", "*.tsx", "*.js", "*.jsx", "*.svelte", "*.vue",
+      "*.toml", "*.json", "*.html"
+    ],
+    "codegen_paths": [
+      "*.ts", "*.tsx", "*.js", "*.jsx", "*.svelte", "*.vue",
+      "*.toml", "*.json", "*.html"
+    ],
+    "test_paths": [
+      "*/tests/*", "*/tests.rs", "*.test.ts", "*.test.js", "*.spec.ts",
+      "*/fixtures/*"
+    ]
+  },
+
+  "extra_signals": []
+}
