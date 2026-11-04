@@ -29,8 +29,7 @@ reached from a string.>
 ### 2 · `<name>` — …
 
 <!-- Repeat. Target ~20–40 files or ~25k lines per shard, 3–12 shards total.
-     `signals.sh` reports files matching no shard glob in uncovered.txt —
-     that number should be 0, or every exception should be deliberate. -->
+     A file matching no shard glob stops the sweep (SKILL.md, Phase 0). -->
 
 ---
 
