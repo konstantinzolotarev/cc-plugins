@@ -23,6 +23,22 @@ CFG="python3 $HERE/cfg.py"
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
+# Every shard agent is briefed from a slice, so this is the fan-out's
+# chokepoint: a map with a coverage gap gets no slices (SKILL.md, Phase 0).
+# Checked fresh against today's shards.md, not read from the pack, so a map
+# fixed since signals.sh ran passes without a rebuild.
+status=0
+python3 "$HERE/shards.py" coverage "$SIG" > /dev/null || status=$?
+if [ "$status" -ne 0 ]; then
+  if [ "$status" -eq 3 ]; then
+    echo "slice: coverage gap — $(wc -l < "$SIG/uncovered.txt" | tr -d ' ') files in" \
+      "$SIG/uncovered.txt; add them to shards.md before fanning out" >&2
+  else
+    echo "slice: shards.py coverage failed (exit $status)" >&2
+  fi
+  exit 1
+fi
+
 DEST="$SIG/shards/$SHARD"
 mkdir -p "$DEST"
 

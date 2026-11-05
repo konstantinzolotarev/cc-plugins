@@ -77,6 +77,28 @@ for lane in "${LANES[@]}"; do
   echo "  files.$lane: $(wc -l < "$OUT/files.$lane" | tr -d ' ')"
 done
 
+# ── shard coverage ───────────────────────────────────────────────────────────
+# The drift check for the shard map itself: a new crate or top-level directory
+# that no shard glob matches is a hole no agent will look into. A gap stops
+# the sweep (SKILL.md, Phase 0) — recorded here, acted on after the summary.
+# It reads only the file lists, so it runs straight after them: the gap shows
+# in seconds, not after the lint build. The pack is still built in full, so
+# once the map is fixed only `shards.py coverage` needs re-running.
+GAP=""
+if [ -f "$ROOT/.claude/audit/shards.md" ]; then
+  echo "▸ shard coverage"
+  status=0
+  python3 "$HERE/shards.py" coverage "$OUT" || status=$?
+  case "$status" in
+    0) ;;
+    3) GAP="coverage gap: $(( $(wc -l < "$OUT/uncovered.txt") )) files (uncovered.txt)"
+       echo "  STOP — $GAP; the pack still builds, the sweep must not fan out" ;;
+    *) skip "shard coverage (shards.py failed — see above)" ;;
+  esac
+else
+  skip "shard coverage (no .claude/audit/shards.md — run /audit --init)"
+fi
+
 # ── dead code: public symbol reference counts ────────────────────────────────
 echo "▸ symbols"
 bash "$HERE/symbols.sh" "$OUT"
@@ -182,24 +204,6 @@ else
         ;;
     esac
   done
-fi
-
-# ── shard coverage ───────────────────────────────────────────────────────────
-# The drift check for the shard map itself: a new crate or top-level directory
-# that no shard glob matches is a hole no agent will look into. A gap stops
-# the sweep (SKILL.md, Phase 0) — recorded here, acted on after the summary.
-GAP=""
-if [ -f "$ROOT/.claude/audit/shards.md" ]; then
-  echo "▸ shard coverage"
-  status=0
-  python3 "$HERE/shards.py" coverage "$OUT" || status=$?
-  case "$status" in
-    0) ;;
-    3) GAP="coverage gap: $(( $(wc -l < "$OUT/uncovered.txt") )) files (uncovered.txt)" ;;
-    *) skip "shard coverage (shards.py failed — see above)" ;;
-  esac
-else
-  skip "shard coverage (no .claude/audit/shards.md — run /audit --init)"
 fi
 
 # ── summary ──────────────────────────────────────────────────────────────────

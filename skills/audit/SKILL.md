@@ -117,7 +117,8 @@ bash <skill>/scripts/slice.sh "$SCRATCH/audit-signals" <shard>
 ```
 
 `slice.sh` reads the shard's globs out of `shards.md` itself, so a brief and
-its slice cannot disagree. Get the shard list with
+its slice cannot disagree. It also re-runs the coverage check first and
+refuses to slice while there is a gap. Get the shard list with
 `python3 <skill>/scripts/shards.py list`.
 
 Give each shard agent exactly this, filled in:
