@@ -82,9 +82,21 @@ uncovered.txt                lane files matching no shard glob
 summary.txt                  counts, lanes, and what was skipped
 ```
 
-**`uncovered.txt` is a finding in its own right** — files no agent will read
-because no shard claims them. Report the count; if it is large, say so before
-fanning out, because the sweep is that much less complete.
+**A coverage gap stops the sweep.** A lane file no shard glob matches is a file
+no agent reads, and a sweep that runs anyway reports it clean — the map drifts
+silently as the repo grows. So `signals.sh` exits 1, and `summary.txt` says
+`STOP — coverage gap: N files (uncovered.txt)` under its header. Before
+fanning out:
+
+1. Add globs to `shards.md` for every file in `uncovered.txt` — into the shard
+   whose area it belongs to, or a new shard. A file no agent should read is
+   excluded in `config.json` instead; it is never left uncovered.
+2. Re-run `python3 <skill>/scripts/shards.py coverage "$SCRATCH/audit-signals"`
+   until it exits 0. The pack itself needs no rebuild.
+3. Say in the report which globs were added. The patched `shards.md` travels
+   with the report: whenever the report is committed, commit it alongside.
+
+`--signals-only` reports the gap the same way, and stops there.
 
 ## Phase 1 — fan out
 
@@ -105,7 +117,8 @@ bash <skill>/scripts/slice.sh "$SCRATCH/audit-signals" <shard>
 ```
 
 `slice.sh` reads the shard's globs out of `shards.md` itself, so a brief and
-its slice cannot disagree. Get the shard list with
+its slice cannot disagree. It also re-runs the coverage check first and
+refuses to slice while there is a gap. Get the shard list with
 `python3 <skill>/scripts/shards.py list`.
 
 Give each shard agent exactly this, filled in:
@@ -227,8 +240,8 @@ For a repo with no `.claude/audit/`. In order:
 4. Write `.claude/audit/shards.md` from `assets/shards.template.md`. Sizing:
    ~20–40 files or ~25k lines per shard, 3–12 shards, boundaries
    architectural. Mark every inferred invariant `TODO(verify)`.
-5. Re-run `shards.py coverage` and iterate until `uncovered.txt` is empty or
-   every exception is deliberate.
+5. Re-run `shards.py coverage` and iterate until it passes — Phase 0 stops on
+   any gap.
 6. Report: the shards, the `TODO(verify)` count — which is the honest measure
    of how much this repo documents itself — and what to review first.
 

@@ -8,6 +8,9 @@
 #   ./signals.sh --out <dir>            full pack (lint build: minutes)
 #   ./signals.sh --out <dir> --quick    skip the lint builds (~30 s)
 #
+# Exits 1 on a shard-coverage gap (SKILL.md, Phase 0), after writing the
+# whole pack, so only `shards.py coverage` needs re-running.
+#
 # Every glob, exclude and toolchain command comes from cfg.py — skill
 # defaults, plus repo detection, plus the project's .claude/audit/config.json.
 # Nothing about any one repo is written down here.
@@ -73,6 +76,28 @@ for lane in "${LANES[@]}"; do
   fi
   echo "  files.$lane: $(wc -l < "$OUT/files.$lane" | tr -d ' ')"
 done
+
+# ── shard coverage ───────────────────────────────────────────────────────────
+# The drift check for the shard map itself: a new crate or top-level directory
+# that no shard glob matches is a hole no agent will look into. A gap stops
+# the sweep (SKILL.md, Phase 0) — recorded here, acted on after the summary.
+# It reads only the file lists, so it runs straight after them: the gap shows
+# in seconds, not after the lint build. The pack is still built in full, so
+# once the map is fixed only `shards.py coverage` needs re-running.
+GAP=""
+if [ -f "$ROOT/.claude/audit/shards.md" ]; then
+  echo "▸ shard coverage"
+  status=0
+  python3 "$HERE/shards.py" coverage "$OUT" || status=$?
+  case "$status" in
+    0) ;;
+    3) GAP="coverage gap: $(( $(wc -l < "$OUT/uncovered.txt") )) files (uncovered.txt)"
+       echo "  STOP — $GAP; the pack still builds, the sweep must not fan out" ;;
+    *) skip "shard coverage (shards.py failed — see above)" ;;
+  esac
+else
+  skip "shard coverage (no .claude/audit/shards.md — run /audit --init)"
+fi
 
 # ── dead code: public symbol reference counts ────────────────────────────────
 echo "▸ symbols"
@@ -181,16 +206,6 @@ else
   done
 fi
 
-# ── shard coverage ───────────────────────────────────────────────────────────
-# The drift check for the shard map itself: a new crate or top-level directory
-# that no shard glob matches is a hole no agent will look into.
-if [ -f "$ROOT/.claude/audit/shards.md" ]; then
-  echo "▸ shard coverage"
-  python3 "$HERE/shards.py" coverage "$OUT" || true
-else
-  skip "shard coverage (no .claude/audit/shards.md — run /audit --init)"
-fi
-
 # ── summary ──────────────────────────────────────────────────────────────────
 {
   echo "audit signal pack"
@@ -199,6 +214,11 @@ fi
   echo "branch:    $(git rev-parse --abbrev-ref HEAD)"
   echo "lanes:     ${LANES[*]}"
   echo "quick:     $QUICK"
+  if [ -n "$GAP" ]; then
+    echo
+    echo "STOP — $GAP. Do not fan out: add globs to shards.md for every"
+    echo "file in uncovered.txt, then re-run shards.py coverage until it passes."
+  fi
   echo
   for f in "$OUT"/*.tsv; do
     [ -e "$f" ] || continue
@@ -214,3 +234,4 @@ fi
 
 echo
 cat "$OUT/summary.txt"
+[ -z "$GAP" ] || exit 1

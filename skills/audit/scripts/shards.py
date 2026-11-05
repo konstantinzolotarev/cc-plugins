@@ -22,7 +22,8 @@ hold no shards.
 Usage:
   shards.py list [<shards.md>]             shard names, in file order
   shards.py globs <name> [<shards.md>]     that shard's git pathspecs
-  shards.py coverage <signal-dir> [<md>]   lane files no shard glob matches
+  shards.py coverage <signal-dir> [<md>]   lane files no shard glob matches;
+                                           exits 3 when there are any
 """
 
 from __future__ import annotations
@@ -38,6 +39,13 @@ SECTION = re.compile(r"^##\s+(.*)")
 FENCE = re.compile(r"^\s*```")
 # Everything from these sections on is agent briefing, not shard definitions.
 STOP_SECTIONS = ("global agents", "non-findings", "extra signals", "appendix")
+# How many uncovered files `coverage` names on the terminal; the rest are in
+# uncovered.txt. A first --init run can leave hundreds.
+COVERAGE_SHOWN = 20
+# `coverage`'s exit status on a gap — its own code, so a caller can tell a
+# gap (which stops the sweep: SKILL.md, Phase 0) from a crash (1) or a usage
+# error (2).
+COVERAGE_GAP = 3
 
 
 def repo_root() -> pathlib.Path:
@@ -170,7 +178,11 @@ def main(argv: list[str]) -> int:
         (sig / "uncovered.txt").write_text("".join(f"{f}\n" for f in uncovered))
         print(f"  uncovered.txt: {len(uncovered)} of {len(listed)} lane files "
               f"match no shard glob")
-        return 0
+        for f in uncovered[:COVERAGE_SHOWN]:
+            print(f"    {f}")
+        if len(uncovered) > COVERAGE_SHOWN:
+            print(f"    … and {len(uncovered) - COVERAGE_SHOWN} more (uncovered.txt)")
+        return COVERAGE_GAP if uncovered else 0
 
     print(f"shards: unknown command: {cmd}", file=sys.stderr)
     return 2
